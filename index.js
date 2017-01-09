@@ -38,7 +38,7 @@ LockitronAccessory.prototype.getState = function(callback) {
       var json = JSON.parse(body);
       var state = json.state; // "lock" or "unlock"
       this.log("Lock state is %s", state);
-      var locked = state == "lock"
+      var locked =(state == "lock") ? Characteristic.LockCurrentState.SECURED : Characteristic.LockCurrentState.UNSECURED;
       callback(null, locked); // success
     }
     else {
