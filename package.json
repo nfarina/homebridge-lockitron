@@ -1,6 +1,6 @@
 {
   "name": "homebridge-lockitron",
-  "version": "0.0.2",
+  "version": "0.1.0",
   "description": "Lockitron support for Homebridge: https://github.com/nfarina/homebridge",
   "license": "ISC",
   "keywords": [
