@@ -13,17 +13,54 @@ function LockitronAccessory(log, config) {
   this.name = config["name"];
   this.accessToken = config["api_token"];
   this.lockID = config["lock_id"];
+  this.interval = config["interval"] || 600
   
-  this.service = new Service.LockMechanism(this.name);
+  this.lockService = new Service.LockMechanism(this.name);
   
-  this.service
+  this.lockService
     .getCharacteristic(Characteristic.LockCurrentState)
     .on('get', this.getState.bind(this));
   
-  this.service
+  this.lockService
     .getCharacteristic(Characteristic.LockTargetState)
     .on('get', this.getState.bind(this))
     .on('set', this.setState.bind(this));
+	
+  this.batteryService = new Service.BatteryService();
+  this.batteryService.setCharacteristic(Characteristic.Name, "Battery Level");
+	
+  this.updateState()
+}
+
+LockitronAccessory.prototype.updateState
+
+LockitronAccessory.prototype.updateState = function() {
+	var that = this
+    request.get({
+      url: "https://api.lockitron.com/v2/locks/"+this.lockID,
+      qs: { access_token: this.accessToken }
+    }, function(err, response, body) {
+    
+      if (!err && response.statusCode == 200) {
+		
+        var json = JSON.parse(body);
+        var state = json.state; // "lock" or "unlock"
+		
+		// Update Lock
+        var locked =(state == "lock") ? Characteristic.LockCurrentState.SECURED : Characteristic.LockCurrentState.UNSECURED;
+		that.lockService.setCharacteristic(Characteristic.LockCurrentState, locked);
+		
+		// Update Battery Level
+		battery_level = json.battery_percentage
+		that.batteryService.setCharacteristic(Characteristic.BatteryLevel, battery_level);
+		that.batteryService.setCharacteristic(Characteristic.StatusLowBattery, (battery_level > 10) ? 0 : 1);
+		
+      }
+      else {
+        this.log("Error polling (status code %s): %s", response.statusCode, err);
+      }
+	}.bind(this));
+	setTimeout(this.updateState.bind(this), this.interval * 1000);
 }
 
 LockitronAccessory.prototype.getState = function(callback) {
@@ -65,7 +102,7 @@ LockitronAccessory.prototype.setState = function(state, callback) {
       var currentState = (state == Characteristic.LockTargetState.SECURED) ?
         Characteristic.LockCurrentState.SECURED : Characteristic.LockCurrentState.UNSECURED;
       
-      this.service
+      this.lockService
         .setCharacteristic(Characteristic.LockCurrentState, currentState);
       
       callback(null); // success
@@ -78,5 +115,5 @@ LockitronAccessory.prototype.setState = function(state, callback) {
 },
 
 LockitronAccessory.prototype.getServices = function() {
-  return [this.service];
+  return [this.lockService, this.batteryService];
 }
