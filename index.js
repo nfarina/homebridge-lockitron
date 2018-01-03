@@ -57,7 +57,7 @@ LockitronAccessory.prototype.updateState = function() {
 		
       }
       else {
-        this.log("Error polling (status code %s): %s", response.statusCode, err);
+        this.log("Error polling (status code %s): %s", response && response.statusCode, err);
       }
 	}.bind(this));
 	setTimeout(this.updateState.bind(this), this.interval * 1000);
@@ -79,7 +79,7 @@ LockitronAccessory.prototype.getState = function(callback) {
       callback(null, locked); // success
     }
     else {
-      this.log("Error getting state (status code %s): %s", response.statusCode, err);
+      this.log("Error getting state (status code %s): %s", response && response.statusCode, err);
       callback(err);
     }
   }.bind(this));
